@@ -133,10 +133,15 @@ class Kreis {
         if(this.x < this.radius || this.x > canvas.width - this.radius) {
             this.velocityVector.x = -this.velocityVector.x;
         }
-        
+
         //collision oben/unten vom canvas
-        if(this.y < this.radius || this.y > canvas.height - this.radius) {
-            this.velocityVector.y = -this.velocityVector.y;
+        if (this.y + this.radius >= canvas.height) {
+            this.velocityVector.y = -this.velocityVector.y * 0.8; // reflektieren und dämpfen
+            this.y = canvas.height - this.radius; // Setzen Sie den Kreis direkt über dem Boden
+            this.velocityVector.x *= 0.9; // horizontale Reibung
+        } else if (this.y - this.radius <= 0) {
+            this.velocityVector.y = this.velocityVector.y * 0.8; // reflektieren und dämpfen
+            this.y = this.radius; // Setzen Sie den Kreis direkt unter der Oberkante
         }
 
     //velocity Vektoren als LETZTES aktualiseren
