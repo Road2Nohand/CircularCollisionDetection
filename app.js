@@ -100,8 +100,26 @@ class Kreis {
   
     update() {
 
+        //checken der eigenen collisionen mit allen anderen Kreisen
+        //MUSS zuerst kommen in update(), da sonst glitchen in Wand etc.
+        for (let i = 0; i < Kreise.length; i++) {
+            //no circle should check collision with itself
+            if (this === Kreise[i]) continue;
+
+            let distance = getDistanceCircle(this.x, this.y, Kreise[i].x, Kreise[i].y);
+
+            //if colliden
+            if (distance <= this.radius + Kreise[i].radius) {
+                //Newtons reaction on collision -> updating vectors of colliding objects
+                oneDnewtonianCollision(this, Kreise[i]);
+                collisions++;
+                collisionCounter.innerHTML = "Circle Collisions: " + collisions;
+            }
+        }//for collision Detection
+
         if(this.hasGravity){
             // !!! README !!! wenn in Zeile 105 + " && this.inCanvas()"" gecheckt wird, stucken die sogar an allen Wänden!
+            // hier müsste man eig prüfen, solange nicht in der Luft oder nicht liegend auf einem anderen liegend
             if(this.y + this.radius < canvas.height){ //solange in der Luft
                 this.velocityVector.y += 0.5;
             }
@@ -111,66 +129,28 @@ class Kreis {
                 this.velocityVector.x *= 0.95; //so wird der velocity vektor.y zu "0"
             }
         }
-        
-        //colliden mit Maus zuerst checken
-        let distance = getDistanceCircle(MausKreis.x, MausKreis.y, this.x, this.y);
-        if(distance <= MausKreis.radius + this.radius && MausKreis !== this && !MausKreis.hasGravity){
-            //oneDnewtonianCollision(MausKreis, this);
-            
-            //checken ob Particle RECHTS ist und nicht zu weit rechts, damit es nicht in der Wand bugt
-            if(MausKreis.x < this.x && this.x < canvas.width - this.radius){
-                this.x += 2; 
-                this.velocityVector.x += 0.02;
-            }
-            //checken ob Particle LINKS ist und nicht zu weit links, damit es nicht in der Wand bugt
-            if(MausKreis.x > this.x && this.x > this.radius){
-                this.x -= 2;
-                this.velocityVector.x -= 0.02;
-            }
-            //checken ob Particle UNTER maus
-            if(MausKreis.y < this.y && this.y < canvas.height - this.radius){
-                this.y += 2;
-                this.velocityVector.y += 0.02;
-            }
-            //checken ob Particle ÜBER maus
-            if(MausKreis.y > this.y && this.y > this.radius){
-                this.y -= 2;
-                this.velocityVector.y -= 0.02;
-            }
-        }
-
-
-        //checken der eigenen collisionen mit allen anderen Kreisen
-        for(let i=0; i < Kreise.length; i++){
-            //kein Kreis sollte sich selber checken
-            if(this === Kreise[i]) continue;
-            
-            let distance = getDistanceCircle(this.x, this.y, Kreise[i].x, Kreise[i].y);
-    
-            //if colliden
-            if(distance <= this.radius + Kreise[i].radius){
-                //console.log("Collision!");
-
-                //Newtons Reaktion auf Collision
-                oneDnewtonianCollision(this, Kreise[i]);
-
-                collisions++;
-                collisionCounter.innerHTML = "Circle Collisions: " + collisions;
-            }
-        }//for collision Detection
 
         //collision links/rechts vom canvas
-        if(this.x < this.radius || this.x > canvas.width - this.radius) {
+        if (this.x - this.radius < 0) {
+            this.x = this.radius;
+            this.velocityVector.x = -this.velocityVector.x;
+        } else if (this.x + this.radius > canvas.width) {
+            this.x = canvas.width - this.radius;
             this.velocityVector.x = -this.velocityVector.x;
         }
         //collision oben/unten vom canvas
-        if(this.y < this.radius || this.y > canvas.height - this.radius) {
+        if (this.y - this.radius < 0) {
+            this.y = this.radius;
+            this.velocityVector.y = -this.velocityVector.y;
+        } else if (this.y + this.radius > canvas.height) {
+            this.y = canvas.height - this.radius;
             this.velocityVector.y = -this.velocityVector.y;
         }
+        
 
 
     //velocity Vektoren als LETZTES aktualiseren
-    if(this == MausKreis && !this.hasGravity){
+    if(this === MausKreis && !this.hasGravity){
         //richtungsVektor bestimmen
         MausKreis.velocityVector.x =  mouse.x - MausKreis.x;
         MausKreis.velocityVector.y =  mouse.y - MausKreis.y;
@@ -179,14 +159,19 @@ class Kreis {
         MausKreis.x += MausKreis.velocityVector.x;
         MausKreis.y += MausKreis.velocityVector.y;
     }
-    else{
-        //Position um Vektor aktualisieren
+    else{ // if normal circle
+        
+        // Wenn die Energie zu hoch ist aktiviere Reibung bis unter 1
+        // Verhindert dass die kinetische Energie explodiert bei Mausberührung
+        if(Math.abs(this.velocityVector.x) > 1 || Math.abs(this.velocityVector.y) > 1){
+            this.velocityVector.x *= 0.98;
+            this.velocityVector.y *= 0.98;
+        }
+
+        //Position updating to new vector
         this.x += this.velocityVector.x;
         this.y += this.velocityVector.y;
     }    
-
-    // console.log("Vector: "+ MausKreis.velocityVector.x +", "+ MausKreis.velocityVector.y);
-    // console.log("Position: "+MausKreis.x +", "+ MausKreis.y);
 
     this.draw(); //erst Position update, dann drawen für mehr Aktualität
     }//update()
@@ -291,13 +276,7 @@ function init(){ //hier werden Objekte erstellt
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     MausKreis = new Kreis(mouse.x, mouse.y, 50, "white");
-
-    MausKreis.velocityVector.x = 0;
-    MausKreis.velocityVector.y = 0;
-    MausKreis.mass = 0;
-    
-    Kreise.push(MausKreis);
-    
+    Kreise.push(MausKreis);  
 
     //i anzahl Kreise zufällig im rahmen des Canvas spawnen
     for (let i=0; i < anzKreise;i++){
@@ -325,9 +304,7 @@ function animate(){
     //canvas clearen in jedem Frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    Kreise.forEach(Kreis => {
-        Kreis.update();
-    });
+    Kreise.forEach(Kreis => Kreis.update() );
 
     //kinetische Energie berechnen
     Kreise.forEach(Kreis => {
@@ -338,8 +315,6 @@ function animate(){
     });
     kinetikCounter.innerHTML = "Kinetische Energie: "+gesKinetik.toFixed(2);
     gesKinetik = 0;
-
-
 }
 
 //#endregion ----- Funktionen --------
@@ -395,9 +370,6 @@ addEventListener("click", () => {
     if(MausKreis.hasGravity){
         MausKreis.hasGravity = false;
         MausKreis.color = "white";
-        MausKreis.mass = 0;
-        MausKreis.velocityVector.x = 0;
-        MausKreis.velocityVector.y = 0;
         MausKreis.x = mouse.x;
         MausKreis.y = mouse.y;
     }
