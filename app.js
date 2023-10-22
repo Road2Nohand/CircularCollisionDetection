@@ -135,7 +135,7 @@ class Kreis {
             this.velocityVector.x = -this.velocityVector.x;
         }
         //collision oben/unten vom canvas
-        if (this.y - this.radius < 1 || this.y + this.radius > canvas.height - TASK_LEISTE) {
+        if (this.y - this.radius < 1 || this.y + this.radius > canvas.height) {
             this.velocityVector.y = -this.velocityVector.y;
         }      
 
