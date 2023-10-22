@@ -118,45 +118,26 @@ class Kreis {
         }//for collision Detection
 
         if(this.hasGravity){
-            // !!! README !!! wenn in Zeile 105 + " && this.inCanvas()"" gecheckt wird, stucken die sogar an allen Wänden!
-            // hier müsste man eig prüfen, solange nicht in der Luft oder nicht liegend auf einem anderen liegend
+            // hier müsste man eig prüfen, solange nicht in der Luft oder nicht auf einem anderen liegend
             if(this.y + this.radius < canvas.height){ //solange in der Luft
                 this.velocityVector.y += 0.5;
             }
-            else{ //macht man hier ein "else if(this.inCanvas())" draus, osziliert gar nichts mehr lol???
-                // this is Friction m888888 :D
+            else{
+                // Wenn Kreise auf dem Boden liegen, kinetische Energie wegnehmen
                 this.velocityVector.y *= 0.95; //so wird der velocity vektor.y zu "0"
                 this.velocityVector.x *= 0.95; //so wird der velocity vektor.y zu "0"
             }
         }
 
         //collision links/rechts vom canvas
-        if (this.x - this.radius < 1 || this.x + this.radius > canvas.width) {
+        if(this.x < this.radius || this.x > canvas.width - this.radius) {
             this.velocityVector.x = -this.velocityVector.x;
         }
-        //collision oben/unten vom canvas
-        if (this.y - this.radius < 1 || this.y + this.radius > canvas.height) {
-            this.velocityVector.y = -this.velocityVector.y;
-        }      
-
         
-        //checken der eigenen collisionen mit allen anderen Kreisen
-        for (let i = 0; i < Kreise.length; i++) {
-            //no circle should check collision with itself
-            if (this === Kreise[i]) continue;
-
-            let distance = getDistanceCircle(this.x, this.y, Kreise[i].x, Kreise[i].y);
-
-            //if colliden
-            if (distance <= this.radius + Kreise[i].radius) {
-                //Newtons reaction on collision -> updating vectors of colliding objects
-                oneDnewtonianCollision(this, Kreise[i]);
-                collisions++;
-                collisionCounter.innerHTML = "Circle Collisions: " + collisions;
-            }
-
-        }//for collision Detection
-
+        //collision oben/unten vom canvas
+        if(this.y < this.radius || this.y > canvas.height - this.radius) {
+            this.velocityVector.y = -this.velocityVector.y;
+        }
 
     //velocity Vektoren als LETZTES aktualiseren
     if(this === MausKreis && !this.hasGravity){
