@@ -131,22 +131,13 @@ class Kreis {
         }
 
         //collision links/rechts vom canvas
-        if (this.x - this.radius < 0) {
-            this.x = this.radius;
-            this.velocityVector.x = -this.velocityVector.x;
-        } else if (this.x + this.radius > canvas.width) {
-            this.x = canvas.width - this.radius;
+        if (this.x - this.radius < 1 || this.x + this.radius > canvas.width) {
             this.velocityVector.x = -this.velocityVector.x;
         }
         //collision oben/unten vom canvas
-        if (this.y - this.radius < 0) {
-            this.y = this.radius;
+        if (this.y - this.radius < 1 || this.y + this.radius > canvas.height - TASK_LEISTE) {
             this.velocityVector.y = -this.velocityVector.y;
-        } else if (this.y + this.radius > canvas.height) {
-            this.y = canvas.height - this.radius;
-            this.velocityVector.y = -this.velocityVector.y;
-        }
-        
+        }      
 
         
         //checken der eigenen collisionen mit allen anderen Kreisen
