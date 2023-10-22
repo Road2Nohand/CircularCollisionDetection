@@ -11,6 +11,7 @@ body {
 
 #canvas {
     background: #804768;
+    border-radius: 20px;
     top: 1vh;
     left: 10vw;
     position: relative;
