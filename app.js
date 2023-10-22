@@ -148,6 +148,24 @@ class Kreis {
         }
         
 
+        
+        //checken der eigenen collisionen mit allen anderen Kreisen
+        for (let i = 0; i < Kreise.length; i++) {
+            //no circle should check collision with itself
+            if (this === Kreise[i]) continue;
+
+            let distance = getDistanceCircle(this.x, this.y, Kreise[i].x, Kreise[i].y);
+
+            //if colliden
+            if (distance <= this.radius + Kreise[i].radius) {
+                //Newtons reaction on collision -> updating vectors of colliding objects
+                oneDnewtonianCollision(this, Kreise[i]);
+                collisions++;
+                collisionCounter.innerHTML = "Circle Collisions: " + collisions;
+            }
+
+        }//for collision Detection
+
 
     //velocity Vektoren als LETZTES aktualiseren
     if(this === MausKreis && !this.hasGravity){
@@ -250,11 +268,11 @@ function oneDnewtonianCollision(Kreis1, Kreis2) {
 
         //neue velocityVectoren berechnen
         const v1 = {
-            x: u1.x*(m1-m2) / (m1+m2) + u2.x*2*m2 / (m1+m2),
+            x: u1.x * (m1 - m2) / (m1 + m2) + u2.x * 2 * m2 / (m1 + m2),
             y: u1.y
         };
         const v2 = {
-            x: u2.x*(m1-m2) / (m1+m2) + u1.x* 2 * m1 / (m1+m2),
+            x: u2.x * (m1 - m2) / (m1 + m2) + u1.x * 2 * m1 / (m1 + m2),
             y: u2.y
         };
 
