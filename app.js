@@ -53,6 +53,7 @@ let updatesPerFrame = 6;
 // -> Funktioniert nicht glitchen noch mehr ineinander weil sie keine Kraft mehr haben um sich zu "wehren", 
 // --> hier muss generell eher ein anderer Collision Algorithmus wie z.B. verwendet werden "Verlet Integration" ist viel besser vermutlich
 // In der "Verlet Integration" geht es um Positionsveränderungen über die Zeit, hier werden die Geschwindigkeiten nur indirekt berechnet, anders wie bei meiner Variante mit dem oneD-Newtonian
+// ToDo: https://www.youtube.com/watch?v=-GWTDhOQU6M&ab_channel=pikuma durcharbeiten
 const frictionCoefficient = 0; 
 
 
