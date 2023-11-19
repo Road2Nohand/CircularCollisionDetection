@@ -407,11 +407,13 @@ gravityBTN.onclick = () => {
                 gravityBTN.style.color = "#804768";
                 gravityBTN.style.backgroundColor = "lightblue";
                 gravityBTN.style.boxShadow = "2px 2px 10px black";
+                gravityBTN.style.opacity = 0.6;
             }else{
                 Kreis.hasGravity = true;
-                gravityBTN.style.color = "lawngreen";
+                gravityBTN.style.color = "lightblue";
                 gravityBTN.style.backgroundColor = "#804768";
-                gravityBTN.style.boxShadow = "2px 2px 20px lawngreen";
+                gravityBTN.style.boxShadow = "2px 2px 20px lightblue";
+                gravityBTN.style.opacity = 1;
                 Kreis.velocityVector.x = 0;
                 Kreis.velocityVector.y = 0;
             }
