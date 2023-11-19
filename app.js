@@ -47,7 +47,7 @@ let Kreise = []; //Array an Kreis Partikeln
 const colors = ["#d7d9b1","#aec3c0","#84acce","#838fb0","#827191"];
 
 // Updates pro Frame für stabilere Simulation
-let updatesPerFrame = 8;
+let updatesPerFrame = 6;
 
 // Reibungskoeffiziente damit bei eingeschalteter Gravitation nicht ewig weiter bouncen 
 // -> Funktioniert nicht glitchen noch mehr ineinander weil sie keine Kraft mehr haben um sich zu "wehren", 
