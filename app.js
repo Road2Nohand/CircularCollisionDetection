@@ -375,6 +375,9 @@ anzParticles.oninput = () => {
     anzKreise = anzParticles.value;
     Kreise = [];
     MausKreis.hasGravity = false;
+    gravityBTN.style.color = "#804768";
+    gravityBTN.style.backgroundColor = "lightblue";
+    gravityBTN.style.boxShadow = "2px 2px 10px black";
     init();
 }
 
@@ -400,8 +403,14 @@ gravityBTN.onclick = () => {
         if(!(Kreis == MausKreis)) {
             if(Kreis.hasGravity){
                 Kreis.hasGravity = false;
+                gravityBTN.style.color = "#804768";
+                gravityBTN.style.backgroundColor = "lightblue";
+                gravityBTN.style.boxShadow = "2px 2px 10px black";
             }else{
                 Kreis.hasGravity = true;
+                gravityBTN.style.color = "lawngreen";
+                gravityBTN.style.backgroundColor = "#804768";
+                gravityBTN.style.boxShadow = "2px 2px 20px lawngreen";
                 Kreis.velocityVector.x = 0;
                 Kreis.velocityVector.y = 0;
             }
