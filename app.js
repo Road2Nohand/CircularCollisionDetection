@@ -46,6 +46,16 @@ let Kreise = []; //Array an Kreis Partikeln
 //color Template
 const colors = ["#d7d9b1","#aec3c0","#84acce","#838fb0","#827191"];
 
+// Updates pro Frame für stabilere Simulation
+let updatesPerFrame = 6;
+
+// Reibungskoeffiziente damit bei eingeschalteter Gravitation nicht ewig weiter bouncen 
+// -> Funktioniert nicht glitchen noch mehr ineinander weil sie keine Kraft mehr haben um sich zu "wehren", 
+// --> hier muss generell eher ein anderer Collision Algorithmus wie z.B. verwendet werden "Verlet Integration" ist viel besser vermutlich
+// In der "Verlet Integration" geht es um Positionsveränderungen über die Zeit, hier werden die Geschwindigkeiten nur indirekt berechnet, anders wie bei meiner Variante mit dem oneD-Newtonian
+const frictionCoefficient = 0; 
+
+
 //#endregion -----  Globals -------- 
 
 
@@ -98,10 +108,13 @@ class Kreis {
         ctx.closePath();
     }//draw()
   
+
     update() {
 
+        // Die Reihenfolge der hier aufgeführten Bedingungen der Kreise ist entscheident, da ein später folgende Position Aktualisierungen durch Bedinungen sich gegenseitig beeinflussen
+        // Generell gilt: Die wichtigsten Bedingungen sollten zuerst folgen, wie z.B. die Collision mit den anderen Kreisen
+
         //checken der eigenen collisionen mit allen anderen Kreisen
-        //MUSS zuerst kommen in update(), da sonst glitchen in Wand etc.
         for (let i = 0; i < Kreise.length; i++) {
             //no circle should check collision with itself
             if (this === Kreise[i]) continue;
@@ -115,55 +128,54 @@ class Kreis {
                 collisions++;
                 collisionCounter.innerHTML = "Circle Collisions: " + collisions;
             }
-        }//for collision Detection
+        }//for Circle Collision Detection 
 
-        if(this.hasGravity){
-            // hier müsste man eig prüfen, solange nicht in der Luft oder nicht auf einem anderen liegend
-            if(this.y + this.radius < canvas.height){ //solange in der Luft
-                this.velocityVector.y += 0.5;
-            }
-            else{
-                // Wenn Kreise auf dem Boden liegen, kinetische Energie wegnehmen
-                this.velocityVector.y *= 0.95; //so wird der velocity vektor.y zu "0"
-                this.velocityVector.x *= 0.95; //so wird der velocity vektor.y zu "0"
-            }
-        }
-
-        //collision links/rechts vom canvas
+        // checken collision links/rechts vom canvas
         if(this.x < this.radius || this.x > canvas.width - this.radius) {
             this.velocityVector.x = -this.velocityVector.x;
         }
 
-        //collision oben/unten vom canvas
+        //checken collision oben/unten vom canvas
         if(this.y < this.radius || this.y > canvas.height - this.radius) {
             this.velocityVector.y = -this.velocityVector.y;
         }
 
-    //velocity Vektoren als LETZTES aktualiseren
-    if(this === MausKreis && !this.hasGravity){
-        //richtungsVektor bestimmen
-        MausKreis.velocityVector.x =  mouse.x - MausKreis.x;
-        MausKreis.velocityVector.y =  mouse.y - MausKreis.y;
+        // Gravitation anwenden
+        if(this.hasGravity){
+            // hier müsste man eig prüfen, solange nicht in der Luft oder nicht auf einem anderen liegend
+            if(this.y + this.radius < canvas.height){ //solange in der Luft
+                this.velocityVector.y += 0.3 / updatesPerFrame;
+            }
+        }        
 
-        //Position aktualisieren
-        MausKreis.x += MausKreis.velocityVector.x;
-        MausKreis.y += MausKreis.velocityVector.y;
-    }
-    else{ // if normal circle
+
+        //velocity Vektoren der Circles als LETZTES aktualiseren
+            // MausKreis Vektoren updaten
+        if(this === MausKreis && !this.hasGravity){
+            //richtungsVektor bestimmen
+            MausKreis.velocityVector.x =  mouse.x - MausKreis.x;
+            MausKreis.velocityVector.y =  mouse.y - MausKreis.y;
         
-        // Wenn die Energie zu hoch ist aktiviere Reibung bis unter 1
-        // Verhindert dass die kinetische Energie explodiert bei Mausberührung
-        if(Math.abs(this.velocityVector.x) > 1 || Math.abs(this.velocityVector.y) > 1){
-            this.velocityVector.x *= 0.98;
-            this.velocityVector.y *= 0.98;
+            //Position aktualisieren
+            MausKreis.x += MausKreis.velocityVector.x / updatesPerFrame;
+            MausKreis.y += MausKreis.velocityVector.y / updatesPerFrame;
         }
-
-        //Position updating to new vector
-        this.x += this.velocityVector.x;
-        this.y += this.velocityVector.y;
-    }    
-
-    this.draw(); //erst Position update, dann drawen für mehr Aktualität
+            // normal circle Vektoren updaten
+        else{ 
+        
+            //Position updating to new vector
+            this.x += this.velocityVector.x / updatesPerFrame;
+            this.y += this.velocityVector.y / updatesPerFrame;
+            
+            // Wenn die Energie zu hoch ist aktiviere Reibung bis unter 1
+            // Verhindert dass die kinetische Energie explodiert bei Mausberührung
+            if(Math.abs(this.velocityVector.x) > 1 || Math.abs(this.velocityVector.y) > 1){
+                this.velocityVector.x *= Math.pow(0.98, 1/updatesPerFrame);
+                this.velocityVector.y *= Math.pow(0.98, 1/updatesPerFrame);
+            }
+        }    
+    
+        this.draw(); //erst Position update, dann erst drawn für mehr Aktualität
     }//update()
 
     inCanvas() {
@@ -257,6 +269,14 @@ function oneDnewtonianCollision(Kreis1, Kreis2) {
         Kreis1.velocityVector.y = vFinal1.y;
         Kreis2.velocityVector.x = vFinal2.x;
         Kreis2.velocityVector.y = vFinal2.y;
+
+        // Anwendung der Reibung bei aktivierter Gravitation
+        if (Kreis1.hasGravity || Kreis2.hasGravity) {
+            Kreis1.velocityVector.x *= 1 - frictionCoefficient;
+            Kreis1.velocityVector.y *= 1 - frictionCoefficient;
+            Kreis2.velocityVector.x *= 1 - frictionCoefficient;
+            Kreis2.velocityVector.y *= 1 - frictionCoefficient;
+        }
     }
 }//endOf 1dCollision alla Newton
 
@@ -294,7 +314,10 @@ function animate(){
     //canvas clearen in jedem Frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    Kreise.forEach(Kreis => Kreis.update() );
+    // Mehr Updates pro Frame für stabilere Simulation
+    for(i=  0; i < updatesPerFrame; i++ ){
+        Kreise.forEach(Kreis => Kreis.update() );
+    }
 
     //kinetische Energie berechnen
     Kreise.forEach(Kreis => {
@@ -375,9 +398,13 @@ addEventListener("click", () => {
 gravityBTN.onclick = () => {
     Kreise.forEach(Kreis => {
         if(!(Kreis == MausKreis)) {
-            Kreis.hasGravity = true;
-            Kreis.velocityVector.x = 0;
-            Kreis.velocityVector.y = 0;
+            if(Kreis.hasGravity){
+                Kreis.hasGravity = false;
+            }else{
+                Kreis.hasGravity = true;
+                Kreis.velocityVector.x = 0;
+                Kreis.velocityVector.y = 0;
+            }
         }
     });
 };
