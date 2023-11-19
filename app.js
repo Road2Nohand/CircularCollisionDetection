@@ -47,7 +47,7 @@ let Kreise = []; //Array an Kreis Partikeln
 const colors = ["#d7d9b1","#aec3c0","#84acce","#838fb0","#827191"];
 
 // Updates pro Frame für stabilere Simulation
-let updatesPerFrame = 6;
+let updatesPerFrame = 8;
 
 // Reibungskoeffiziente damit bei eingeschalteter Gravitation nicht ewig weiter bouncen 
 // -> Funktioniert nicht glitchen noch mehr ineinander weil sie keine Kraft mehr haben um sich zu "wehren", 
@@ -407,6 +407,7 @@ gravityBTN.onclick = () => {
                 gravityBTN.style.color = "#804768";
                 gravityBTN.style.backgroundColor = "lightblue";
                 gravityBTN.style.boxShadow = "2px 2px 10px black";
+                canvas.style.boxShadow = "2px 2px 20px black";
                 gravityBTN.style.opacity = 0.6;
             }else{
                 Kreis.hasGravity = true;
@@ -416,6 +417,7 @@ gravityBTN.onclick = () => {
                 gravityBTN.style.opacity = 1;
                 Kreis.velocityVector.x = 0;
                 Kreis.velocityVector.y = 0;
+                canvas.style.boxShadow = "0px 10px 10px lightblue";
             }
         }
     });
