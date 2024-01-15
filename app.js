@@ -351,6 +351,12 @@ addEventListener("mousemove", e => {
     mouse.y = e.clientY - canvas.getBoundingClientRect().y;
 });
 
+// Auch für touch events
+addEventListener("touchmove", e => {
+    mouse.x = e.touches[0].clientX - canvas.getBoundingClientRect().x; //um offset des Canvas zentriert
+    mouse.y = e.touches[0].clientY - canvas.getBoundingClientRect().y;
+});
+
 // Draw Distances
 drawDistancesCheckBox.onchange = e =>  {
     if(e.target.checked){
