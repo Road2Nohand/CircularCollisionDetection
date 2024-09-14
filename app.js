@@ -27,8 +27,8 @@ let drawVectors = drawVectorsCheckBox.checked;
 //slider von anzParticles
 let anzParticles = document.getElementById("anzParticles");
 let anzParticlesOutput = document.getElementById("anzParticlesOutput");
-anzKreise = anzParticles.value;
-anzParticles.value = anzKreise;
+ANZ_KREISE = anzParticles.value;
+anzParticles.value = ANZ_KREISE;
 anzParticlesOutput.innerHTML = anzParticles.value;
 
 // Gravity Button
@@ -40,7 +40,7 @@ let mouse = {
     y: 0
 }
 var MausKreis;
-
+let MAX_KREIS_RADIUS = 29
 let Kreise = []; //Array an Kreis Partikeln
 
 //color Template
@@ -129,7 +129,7 @@ class Kreis {
                 collisions++;
                 collisionCounter.innerHTML = "Circle Collisions: " + collisions;
             }
-        }//for Circle Collision Detection 
+        }//for Circle Collision Detection
 
         // checken collision links/rechts vom canvas
         if(this.x < this.radius || this.x > canvas.width - this.radius) {
@@ -282,16 +282,42 @@ function oneDnewtonianCollision(Kreis1, Kreis2) {
 }//endOf 1dCollision alla Newton
 
 
-function init(){ //hier werden Objekte erstellt
-    console.log("init()...");  
+function calculateMaxParticles() {
+    const circleArea = Math.PI * Math.pow(MAX_KREIS_RADIUS, 2);
+    const canvasArea = canvas.width * canvas.height;
+    const packingFactor = 0.6; // Packungsfaktor damit nicht gesamte Fläche für Berechnung verwendet wird, da Circles zufällig platziert werden
+
+    const maxParticles = Math.floor((canvasArea * packingFactor) / circleArea);
+    return maxParticles;
+}
+
+
+function updateParticleSlider() {
+    const maxParticles = calculateMaxParticles();
+    anzParticles.max = maxParticles;
+
+    // Falls der aktuelle Wert des Sliders das neue Maximum überschreitet
+    if (parseInt(anzParticles.value) > maxParticles) {
+        anzParticles.value = maxParticles;
+        anzParticlesOutput.innerHTML = maxParticles;
+        ANZ_KREISE = maxParticles;
+    }
+}
+
+
+function init(){ //hier werden alle Kreise solange gespawned bis sie nicht overlappen
+    console.log("init()...");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Aktualisiere den Slider basierend auf der aktuellen Canvas-Größe
+    updateParticleSlider();
+
     MausKreis = new Kreis(mouse.x, mouse.y, 50, "white");
-    Kreise.push(MausKreis);  
+    Kreise.push(MausKreis);
 
     //i anzahl Kreise zufällig im rahmen des Canvas spawnen
-    for (let i=0; i < anzKreise;i++){
-        let radius = Math.floor(Math.random() * 29 + 1); // [1,10]
+    for (let i=0; i < ANZ_KREISE;i++){
+        let radius = Math.floor(Math.random() * MAX_KREIS_RADIUS + 1); // [1,30]
         let x = randomIntFromRange(radius*2, canvas.width-radius*2);
         let y = randomIntFromRange(radius*2, canvas.height-radius*2);
 
@@ -307,7 +333,7 @@ function init(){ //hier werden Objekte erstellt
             }
         }
         Kreise.push(new Kreis(x, y, radius, randomColor(colors) ));
-    }    
+    }
 }
 
 function animate(){
@@ -379,7 +405,7 @@ drawVectorsCheckBox.onchange = e =>  {
 
 anzParticles.oninput = () => {
     anzParticlesOutput.innerHTML = anzParticles.value;
-    anzKreise = anzParticles.value;
+    ANZ_KREISE = anzParticles.value;
     Kreise = [];
     MausKreis.hasGravity = false;
     gravityBTN.style.color = "#804768";
