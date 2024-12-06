@@ -1,29 +1,16 @@
 /** @type {HTMLCanvasElement} */
 
-// Diese Variante orientiert sich näher an den Prinzipien, wie sie in Physik-Engines wie Box2D eingesetzt werden.
-// Box2D verwendet einen sogenannten "Sequential Impulse Solver", der iterativ Kollisionen durch Impulse korrigiert, 
-// sowie eine Positionskorrektur (Baumgarte Stabilization), um Penetration zwischen Körpern zu verringern.
-// Hier ist eine vereinfachte Version für Kreise:
-// 
-// Grundprinzip:
-// 1. Integrationsschritt: Aktualisiere Positionen basierend auf Geschwindigkeit und Beschleunigung (Gravitation).
-// 2. Kollisionsdetektion: Finde alle Paare von Kreisen, die sich überlappen.
-// 3. Kollisionsauflösung (Impulse basierend auf relativer Geschwindigkeit und Normalenrichtungsvektor).
-// 4. Positionskorrektur (um Penetration aufzuheben, ähnlich wie Baumgarte in Box2D).
-// 5. Mehrere Iterationen pro Frame, um stabile Ergebnisse zu erzielen (z.B. 10 Iterationen).
+// Diese Variante nutzt einen vereinfachten, Box2D-ähnlichen Ansatz für die Kreiskollisionen mit iterativer Impuls-
+// und Positionskorrektur.
 //
-// Zusätzlich werden Reibung und Restitution berücksichtigt, um realistischer wirkende Kontakte zu erhalten.
-// Die Kreise sollten sich nun stabiler verhalten und nicht unbegrenzt Energie gewinnen. 
-// Komplett perfekt wird es nicht, aber deutlich besser als rein naive Lösungen.
+// Erweiterung: Wenn der Max-Radius-Slider verändert wird, sollen auch der Partikel-Slider sowie die Anzahl 
+// der Partikel entsprechend neu berechnet und angepasst werden, so wie bei einer Neu-Initialisierung.
 //
-// Einstellungen wie restitution, friction, allowedPenetration und correctionFactor können feinjustiert werden, 
-// um ein besseres Ergebnis zu erzielen.
-//
-// Hinweis: Box2D ist weit komplexer, nutzt Warm Starting, feature-reiche Broadphase/Narrowphase-CD usw. 
-// Dies hier ist nur ein sehr vereinfachtes Modell.
-// 
-// Viel Erfolg!
-
+// Vorgehen:
+// - Bei Änderung des Max-Radius-Sliders wird zuerst geprüft, ob der gewählte Wert in das Canvas passt.
+// - Danach wird der Partikel-Slider via updateParticleSlider() neu angepasst, da sich der maximal mögliche Wert
+//   aufgrund des veränderten Radius ändern kann.
+// - Anschließend wird die Simulation neu initiiert.
 
 //#region -------- Globals & Setup --------
 
@@ -52,7 +39,13 @@ anzParticlesOutput.innerHTML = anzParticles.value;
 let gravityBTN = document.getElementById("gravityBTN");
 
 let mouse = { x: 0, y: 0 };
-let MAX_KREIS_RADIUS = 29;
+let MAX_KREIS_RADIUS = 30;  // Standardwert für max Radius
+
+// Neuer Slider für MAX_KREIS_RADIUS
+let maxRadiusSlider = document.getElementById("maxRadiusSlider");
+let maxRadiusOutput = document.getElementById("maxRadiusOutput");
+maxRadiusOutput.innerHTML = MAX_KREIS_RADIUS;
+
 let Kreise = [];
 let MausKreis;
 
@@ -60,12 +53,13 @@ const colors = ["#d7d9b1","#aec3c0","#84acce","#838fb0","#827191"];
 
 // Simulationsparameter
 let dt = 1/60;       // time step
-let iterations = 4;  // Anzahl der Impulsiterationen pro Frame für Kollisionslösung
+let iterations = 4;  // Anzahl der Impulsiterationen pro Frame
 let gravity = 400;    // Pixel/s^2 nach unten
 let restitution = 0.8; // Rückprallfaktor
 let friction = 0.3;   // Einfache Reibung
-let allowedPenetration = 0.01; // Penetrationstoleranz
-let correctionFactor = 0.2; // wie stark Penetration korrigiert wird
+let allowedPenetration = 0.01; 
+let correctionFactor = 0.2; 
+
 //#endregion
 
 
@@ -80,7 +74,7 @@ class Kreis {
         this.mass = Math.PI * radius * radius; // Masse proportional zur Fläche
         this.invMass = (this.mass > 0) ? 1/this.mass : 0;
 
-        this.vx = (Math.random()-0.5)*50; // Startgeschwindigkeit
+        this.vx = (Math.random()-0.5)*50; 
         this.vy = (Math.random()-0.5)*50;
 
         this.hasGravity = false;
@@ -148,13 +142,17 @@ function calculateMaxParticles() {
 }
 
 function updateParticleSlider() {
-    const maxParticles = calculateMaxParticles();
+    let maxParticles = calculateMaxParticles();
+    // Begrenzung auf 4000 setzen
+    maxParticles = Math.min(maxParticles, 4000);
+
     anzParticles.max = maxParticles;
+
     if (parseInt(anzParticles.value) > maxParticles) {
         anzParticles.value = maxParticles;
-        anzParticlesOutput.innerHTML = maxParticles;
-        ANZ_KREISE = maxParticles;
     }
+    ANZ_KREISE = anzParticles.value;
+    anzParticlesOutput.innerHTML = anzParticles.value;
 }
 
 //#endregion
@@ -164,6 +162,16 @@ function updateParticleSlider() {
 
 function init(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Sicherstellen, dass MAX_KREIS_RADIUS nicht zu groß ist.
+    let maxAllowedRadius = Math.floor(Math.min(canvas.width, canvas.height)/2 - 1);
+    if (MAX_KREIS_RADIUS > maxAllowedRadius) {
+        MAX_KREIS_RADIUS = maxAllowedRadius;
+        maxRadiusSlider.value = MAX_KREIS_RADIUS;
+        maxRadiusOutput.innerHTML = MAX_KREIS_RADIUS;
+    }
+
+    // Partikel-Anzahl Slider updaten, da sich durch neuen MAX_KREIS_RADIUS die max. Anzahl ändern kann
     updateParticleSlider();
 
     MausKreis = new Kreis(mouse.x, mouse.y, 50, "white");
@@ -172,17 +180,38 @@ function init(){
 
     for(let i=0; i<ANZ_KREISE; i++){
         let radius = Math.floor(Math.random() * MAX_KREIS_RADIUS + 1);
+
+        // Falls radius so groß, dass er nicht passen kann, überspringen
+        if(radius*2 > canvas.width || radius*2 > canvas.height) {
+            continue;
+        }
+
         let x = randomIntFromRange(radius*2, canvas.width - radius*2);
         let y = randomIntFromRange(radius*2, canvas.height - radius*2);
 
-        for(let j=0; j<Kreise.length; j++){
-            if(getDistanceCircle(x,y,Kreise[j].x,Kreise[j].y) < radius + Kreise[j].radius){
+        let attempts = 0;
+        let placed = false;
+        while(attempts < 50){
+            let overlapFound = false;
+            for(let j=0; j<Kreise.length; j++){
+                if(getDistanceCircle(x,y,Kreise[j].x,Kreise[j].y) < radius + Kreise[j].radius){
+                    overlapFound = true;
+                    break;
+                }
+            }
+            if(!overlapFound){
+                placed = true;
+                break;
+            } else {
                 x = randomIntFromRange(radius*2, canvas.width - radius*2);
                 y = randomIntFromRange(radius*2, canvas.height - radius*2);
-                j = -1;
+                attempts++;
             }
         }
-        Kreise.push(new Kreis(x,y,radius, randomColor(colors)));
+
+        if(placed) {
+            Kreise.push(new Kreis(x,y,radius, randomColor(colors)));
+        }
     }
 
     collisions = 0;
@@ -191,21 +220,18 @@ function init(){
 //#endregion
 
 
-//#region -------- Collision Detection & Resolution --------
+//#region -------- Kontakt & Kollision --------
 
-// Kontaktstruktur
-// Speichert Daten zwischen zwei Kreisen für Kollision
 class Contact {
     constructor(a, b, nx, ny, penetration) {
         this.a = a;   // erster Kreis
         this.b = b;   // zweiter Kreis
-        this.nx = nx; // Normalenvektor x (vom a zum b)
+        this.nx = nx; // Normalenvektor x
         this.ny = ny; // Normalenvektor y
         this.penetration = penetration;
     }
 
     resolvePenetration() {
-        // Positionskorrektur, ähnlich wie in Box2D (baumgarte)
         const totalInvMass = this.a.invMass + this.b.invMass;
         if(totalInvMass <= 0) return;
 
@@ -222,24 +248,19 @@ class Contact {
     }
 
     resolveVelocity() {
-        // Relativgeschwindigkeit
         let rvx = this.b.vx - this.a.vx;
         let rvy = this.b.vy - this.a.vy;
 
-        // Geschwindigkeit entlang der Normalen
         let velAlongNormal = rvx * this.nx + rvy * this.ny;
-        if(velAlongNormal > 0) return; // Sie bewegen sich auseinander, kein Impuls nötig
+        if(velAlongNormal > 0) return; 
 
-        // Berechne restitution
         let e = Math.min(restitution, restitution);
 
-        // Impulsstärke
         let j = -(1+e)*velAlongNormal;
         let invMassSum = this.a.invMass + this.b.invMass;
         if(invMassSum <= 0) return;
         j = j / invMassSum;
 
-        // Impuls anwenden
         let jx = this.nx * j;
         let jy = this.ny * j;
 
@@ -248,35 +269,32 @@ class Contact {
         this.b.vx += jx * this.b.invMass;
         this.b.vy += jy * this.b.invMass;
 
-        // Reibung
-        // Tangentialrichtung bestimmen
+        // Friction
         rvx = this.b.vx - this.a.vx;
         rvy = this.b.vy - this.a.vy;
 
-        // Tangentialvektor = rv - (rv·n)*n
         let rvDotN = rvx*this.nx + rvy*this.ny;
         let tx = rvx - rvDotN*this.nx;
         let ty = rvy - rvDotN*this.ny;
         let tl = Math.sqrt(tx*tx+ty*ty);
         if(tl > 1e-7) {
-            tx /= tl; ty /= tl; 
+            tx /= tl; 
+            ty /= tl; 
         } else {
-            tx = 0; ty = 0;
+            tx = 0; 
+            ty = 0;
         }
 
-        // Tangentialgeschwindigkeit
         let velAlongT = rvx*tx + rvy*ty;
         let jt = -velAlongT;
         jt = jt / invMassSum;
 
-        // Reibung begrenzen
         let mu = friction;
         let jtMax = j * mu;
-        if(Math.abs(jt) > jtMax) {
-            jt = jt > 0 ? jtMax : -jtMax;
+        if(Math.abs(jt) > Math.abs(jtMax)) {
+            jt = (jt > 0) ? jtMax : -jtMax;
         }
 
-        // Tangentialen Impuls
         let jtx = tx * jt;
         let jty = ty * jt;
         this.a.vx -= jtx * this.a.invMass;
@@ -299,9 +317,6 @@ function findContacts() {
             if(distSq < minDist*minDist) {
                 let dist = Math.sqrt(distSq);
                 if(dist < 1e-7) {
-                    // Notfall: liegen fast am gleichen Ort
-                    // Schubse minimal auseinander
-                    // Normal arbiträr
                     const nx = 1; 
                     const ny = 0;
                     const pen = minDist;
@@ -324,7 +339,7 @@ function findContacts() {
 //#region -------- Simulation --------
 
 function step() {
-    // Positionsintegration
+    // Integration
     for (let i=0; i<Kreise.length; i++){
         const k = Kreise[i];
         if (k === MausKreis && !k.hasGravity) {
@@ -334,53 +349,42 @@ function step() {
             k.vy += gravity * dt;
         }
 
-        // Euler Integration
         k.x += k.vx * dt;
         k.y += k.vy * dt;
 
         // Randkollisionen
-        // Boden
         if(k.y + k.radius > canvas.height) {
             k.y = canvas.height - k.radius;
-            // normal velocity flip
             k.vy = -k.vy * restitution;
-            // etwas reibung auf vx
             k.vx *= 0.9;
         }
-        // Decke
         if(k.y - k.radius < 0) {
             k.y = k.radius;
             k.vy = -k.vy * restitution;
         }
-        // Linke Wand
         if(k.x - k.radius < 0) {
             k.x = k.radius;
             k.vx = -k.vx * restitution;
         }
-        // Rechte Wand
         if(k.x + k.radius > canvas.width) {
             k.x = canvas.width - k.radius;
             k.vx = -k.vx * restitution;
         }
     }
 
-    // Kontakte suchen
     let contacts = findContacts();
 
-    // Mehrere Durchläufe um Kontakte zu lösen
     for(let iter=0; iter<iterations; iter++){
         for(let c of contacts) {
-            // Velocity solve
             c.resolveVelocity();
         }
 
         for(let c of contacts) {
-            // Position solve
             c.resolvePenetration();
         }
     }
 
-    // Kinetische Energie berechnen
+    // kinetische Energie
     gesKinetik = 0;
     for(let i=0; i<Kreise.length; i++) {
         const k = Kreise[i];
@@ -433,8 +437,9 @@ drawVectorsCheckBox.onchange = e => {
 };
 
 anzParticles.oninput = () => {
-    anzParticlesOutput.innerHTML = anzParticles.value;
+    // Anzahl wurde geändert -> ANZ_KREISE anpassen
     ANZ_KREISE = anzParticles.value;
+    anzParticlesOutput.innerHTML = anzParticles.value;
     Kreise = [];
     MausKreis.hasGravity = false;
     gravityBTN.style.color = "#804768";
@@ -442,6 +447,30 @@ anzParticles.oninput = () => {
     gravityBTN.style.boxShadow = "2px 2px 10px black";
     init();
 }
+
+// EventListener für den MAX_KREIS_RADIUS Slider
+maxRadiusSlider.oninput = () => {
+    MAX_KREIS_RADIUS = parseInt(maxRadiusSlider.value);
+    maxRadiusOutput.innerHTML = MAX_KREIS_RADIUS;
+
+    // Prüfung falls zu groß
+    let maxAllowedRadius = Math.floor(Math.min(canvas.width, canvas.height)/2 - 1);
+    if (MAX_KREIS_RADIUS > maxAllowedRadius) {
+        MAX_KREIS_RADIUS = maxAllowedRadius;
+        maxRadiusSlider.value = MAX_KREIS_RADIUS;
+        maxRadiusOutput.innerHTML = MAX_KREIS_RADIUS;
+    }
+
+    // Partikelanzahl neu berechnen und Slider updaten
+    updateParticleSlider();
+
+    Kreise = [];
+    MausKreis.hasGravity = false;
+    gravityBTN.style.color = "#804768";
+    gravityBTN.style.backgroundColor = "lightblue";
+    gravityBTN.style.boxShadow = "2px 2px 10px black";
+    init();
+};
 
 addEventListener("click", () => {
     if(MausKreis.hasGravity){
@@ -482,7 +511,6 @@ gravityBTN.onclick = () => {
         for (let i=0; i<Kreise.length; i++){
             if(Kreise[i] !== MausKreis) {
                 Kreise[i].hasGravity = true;
-                // Geschwindigkeit zurücksetzen
                 Kreise[i].vx = 0;
                 Kreise[i].vy = 0;
             }

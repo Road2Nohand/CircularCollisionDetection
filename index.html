@@ -24,8 +24,6 @@
             <label for="drawDistances">Draw Distances</label>
         </div>
 
-        
-
     
         <div id="checkboxDrawVectors">
             <input type="checkbox" name="drawVectors" id="drawVectors">
@@ -34,8 +32,15 @@
 
         <div>
             <p class="desc"><b>Anz. Particles</b></p>
-            <input type="range" min="0" max="500" value="100" id="anzParticles">
+            <input type="range" min="0" max="1000" value="200" id="anzParticles">
             <p id="anzParticlesOutput">number</p>
+        </div>
+
+        <!-- Neuer Slider für MAX_KREIS_RADIUS -->
+        <div>
+            <p class="desc"><b>Max. Radius</b></p>
+            <input type="range" min="3" max="200" value="30" id="maxRadiusSlider" />
+            <p id="maxRadiusOutput">12</p>
         </div>
 
         <button id="gravityBTN">Gravity!</button>
