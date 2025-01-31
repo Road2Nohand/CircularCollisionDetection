@@ -56,7 +56,7 @@ let dt = 1/60;       // time step
 let iterations = 4;  // Anzahl der Impulsiterationen pro Frame
 let gravity = 400;    // Pixel/s^2 nach unten
 let restitution = 0.8; // Rückprallfaktor
-let friction = 0.3;   // Einfache Reibung
+let friction = 1;   // Einfache Reibung
 let allowedPenetration = 0.01; 
 let correctionFactor = 0.2; 
 
