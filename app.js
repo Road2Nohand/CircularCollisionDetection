@@ -33,6 +33,7 @@ let drawVectors = drawVectorsCheckBox.checked;
 
 let anzParticles = document.getElementById("anzParticles");
 let anzParticlesOutput = document.getElementById("anzParticlesOutput");
+let reibungsSliderOutput = document.getElementById("reibungsSliderOutput");
 let ANZ_KREISE = anzParticles.value;
 anzParticlesOutput.innerHTML = anzParticles.value;
 
@@ -44,6 +45,7 @@ let MAX_KREIS_RADIUS = 30;  // Standardwert für max Radius
 // Neuer Slider für MAX_KREIS_RADIUS
 let maxRadiusSlider = document.getElementById("maxRadiusSlider");
 let maxRadiusOutput = document.getElementById("maxRadiusOutput");
+let reibungsSlider = document.getElementById("reibungsSlider");
 maxRadiusOutput.innerHTML = MAX_KREIS_RADIUS;
 
 let Kreise = [];
@@ -57,6 +59,7 @@ let iterations = 4;  // Anzahl der Impulsiterationen pro Frame
 let gravity = 400;    // Pixel/s^2 nach unten
 let restitution = 0.8; // Rückprallfaktor
 let friction = 1;   // Einfache Reibung
+reibungsSliderOutput.innerHTML = friction;
 let allowedPenetration = 0.01; 
 let correctionFactor = 0.2; 
 
@@ -471,6 +474,11 @@ maxRadiusSlider.oninput = () => {
     gravityBTN.style.boxShadow = "2px 2px 10px black";
     init();
 };
+
+reibungsSlider.oninput = () => {
+    friction = parseFloat(reibungsSlider.value);
+    reibungsSliderOutput.innerHTML = friction;
+}
 
 addEventListener("click", () => {
     if(MausKreis.hasGravity){
